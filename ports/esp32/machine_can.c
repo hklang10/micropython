@@ -32,10 +32,7 @@
 #include "mpconfigport.h"
 
 // Headers of ESP-IDF library
-#include "soc/dport_reg.h"
 #include "driver/can.h"
-#include "esp_err.h"
-#include "esp_log.h"
 
 #include "modmachine.h"
 
@@ -121,7 +118,7 @@ STATIC can_status_info_t _machine_hw_can_get_status() {
 STATIC void _machine_hw_can_set_filter(machine_can_obj_t *self, uint32_t addr, uint32_t mask, uint8_t bank, bool rtr) {
     //Check if bank is allowed
     if ( bank < 0 && bank > ((self->extframe && self->config->filter.single_filter) ? 0 : 1 )) {
-        mp_raise_ValueError("CAN filter parameter error");
+        mp_raise_ValueError(MP_ERROR_TEXT("CAN filter parameter error"));
     }
     uint32_t preserve_mask;
     if (self->extframe) {
@@ -259,7 +256,7 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
     mp_obj_t *items;
     mp_obj_get_array(args[ARG_data].u_obj, &length, &items);
     if (length > 8) {
-        mp_raise_ValueError("CAN data field too long");
+        mp_raise_ValueError(MP_ERROR_TEXT("CAN data field too long"));
     }
     uint8_t flags = (args[ARG_rtr].u_bool ? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE);
     uint32_t id = args[ARG_id].u_int;
@@ -286,7 +283,7 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
         }
         return mp_const_none;
     } else {
-        nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, "CAN Device is not ready"));
+        nlr_raise(mp_obj_new_exception_msg(&mp_type_RuntimeError, (MP_ERROR_TEXT("CAN Device is not ready"))));
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_send_obj, 3, machine_hw_can_send);
@@ -322,11 +319,11 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     } else {
         // User should provide a list of length at least 4 to hold the values
         if (!mp_obj_is_type(ret_obj, &mp_type_list)) {
-            mp_raise_TypeError(NULL);
+            mp_raise_TypeError(MP_ERROR_TEXT("Type must be a List"));
         }
         mp_obj_list_t *list = MP_OBJ_TO_PTR(ret_obj);
         if (list->len < 4) {
-            mp_raise_ValueError(NULL);
+            mp_raise_ValueError(MP_ERROR_TEXT("Minimum length of bytearray is 4"));
         }
         items = list->items;
         // Fourth element must be a memoryview which we assume points to a
@@ -394,7 +391,7 @@ STATIC mp_obj_t machine_hw_can_setfilter(size_t n_args, const mp_obj_t *pos_args
     mp_obj_t *params;
     mp_obj_get_array(args[ARG_params].u_obj, &len, &params);
     if (len != 2) {
-        mp_raise_ValueError("params shall be a 2-values list");
+        mp_raise_ValueError(MP_ERROR_TEXT("params shall be a 2-values list"));
     }
     uint32_t id = mp_obj_get_int(params[0]);
     uint32_t mask = mp_obj_get_int(params[1]); // FIXME: Overflow in case 0xFFFFFFFF for mask
@@ -453,7 +450,7 @@ STATIC void machine_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_p
 STATIC mp_obj_t machine_hw_can_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
     machine_can_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     if (self->config->initialized) {
-        ESP_LOGW(DEVICE_NAME, "Device is already initialized");
+        mp_raise_ValueError(MP_ERROR_TEXT("Device is already initialized"));
         return mp_const_none;
     }
     return machine_hw_can_init_helper(self, n_args - 1, args + 1, kw_args);
@@ -464,7 +461,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_init_obj, 4, machine_hw_can_ini
 STATIC mp_obj_t machine_hw_can_deinit(const mp_obj_t self_in) {
     const machine_can_obj_t *self = &machine_can_obj;
     if (self->config->initialized != true) {
-        ESP_LOGW(DEVICE_NAME, "Device is not initialized");
+        mp_raise_ValueError(MP_ERROR_TEXT("Device is not initialized"));
         return mp_const_none;
     }
     uint32_t status = can_stop();
@@ -487,18 +484,18 @@ mp_obj_t machine_hw_can_make_new(const mp_obj_type_t *type, size_t n_args,
     // check arguments
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
     if (mp_obj_is_int(args[0]) != true) {
-        mp_raise_TypeError("bus must be a number");
+        mp_raise_TypeError(MP_ERROR_TEXT("bus must be a number"));
     }
     mp_uint_t can_idx = mp_obj_get_int(args[0]);
     if (can_idx > 1) {
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, "CAN(%d) doesn't exist", can_idx));
+        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("CAN doesn't exist-")));
     }
     machine_can_obj_t *self = &machine_can_obj;
     if (n_args > 1 || n_kw > 0) {
         if (self->config->initialized) {
             // The caller is requesting a reconfiguration of the hardware
             // this can only be done if the hardware is in init mode
-            ESP_LOGW(DEVICE_NAME, "Device is going to be reconfigured");
+            printf("Device is going to be reconfigured\n");
             machine_hw_can_deinit(&self);
         }
         self->rxcallback = mp_const_none;
@@ -559,7 +556,7 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
     self->loopback = ((args[ARG_mode].u_int & 0x10) > 0);
     self->extframe = args[ARG_extframe].u_bool;
     if (args[ARG_auto_restart].u_bool) {
-        mp_raise_NotImplementedError("Auto-restart not supported");
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("Auto-restart not supported"));
     }
     can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
     self->config->filter.single_filter = self->extframe;
@@ -601,7 +598,7 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
         timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_1MBITS() );
         break;
     default:
-        mp_raise_ValueError("Unable to set baudrate");
+        mp_raise_ValueError(MP_ERROR_TEXT("Unable to set baudrate"));
         self->config->baudrate = 0;
         return mp_const_none;
     }

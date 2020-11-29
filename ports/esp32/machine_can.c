@@ -307,7 +307,7 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     can_message_t rx_message;
-    int status = can_receive(&rx_message, 1);
+    int status = can_receive(&rx_message, args[ARG_timeout].u_int);
     if (status != ESP_OK) {
         mp_raise_OSError(-status);
     }

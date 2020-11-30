@@ -342,7 +342,7 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
         memcpy(mv->items, rx_message.data, rx_message.data_length_code);
     }
     items[0] = MP_OBJ_NEW_SMALL_INT(rx_message.identifier);
-    items[1] = mp_obj_new_bool(rx_message.flags && CAN_MSG_FLAG_RTR > 0);
+    items[1] = mp_obj_new_bool(rx_message.flags & CAN_MSG_FLAG_RTR);
     items[2] = 0;
     return ret_obj;
 }

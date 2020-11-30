@@ -25,22 +25,26 @@ Constructors
 
 .. class:: machine.CAN(bus, ...)
 
-   Construct a CAN object on the given bus.  *bus* can be 0 or 1 (for compatibility with STM32). It will point at the same device
-   With no additional parameters, the CAN object is created but not
-   initialised (it has the settings from the last initialisation of
-   the bus, if any).  If extra arguments are given, the bus is initialised.
+   Construct a CAN object on the given bus.  *bus* can be 0 or 1 (for compatibility with STM32). 
+       *bus* is not implemented for esp32, 0 or 1 will point to the same device
+
    See :meth:`CAN.init` for parameters of initialisation.
 
-   The physical pins of the CAN bus can be assigned during init.
+   Calling the CAN constructor for an existing device will deinitialize, empty any queues, 
+      reconfigure and then start the device
+
 
 Methods
 -------
 
-.. method:: CAN.init(mode, extframe=False, baudrate, prescaler, \*, sjw=1, bs1=6, bs2=8, auto_restart=False)
+.. method:: CAN.init(mode, extframe=False, baudrate=500, prescaler, \*, sjw=1, bs1=6, bs2=8, 
+                         tx_io=4, rx_io=2, tx_queue=0, rx_queue=5, auto_restart=False)
 
+   direct calls to init() are not implemented, use machine.CAN() constructor, using the arguments below:
+ 
    Initialise the CAN bus with the given parameters:
 
-     - *mode* is one of:  NORMAL, LOOPBACK, SILENT, SILENT_LOOPBACK
+     - *mode* is one of:  NORMAL, LOOPBACK, SILENT, SILENT_LOOPBACK, LISTEN_ONLY
      - if *extframe* is True then the bus uses extended identifiers in the frames
        (29 bits); otherwise it uses standard 11 bit identifiers
      - *baudrate* is used to define a standard speed. If it is defined, the *prescaler*, *sjw*, *bs1*, *bs2*
@@ -100,8 +104,8 @@ Methods
 
    The values in the list are:
 
-   - TEC value
-   - REC value
+   - Transmit Error Count (TEC) value
+   - Receive Error Count (REC) value
    - number of times the controller enterted the Error Warning state (wrapped
      around to 0 after 65535) - CURRENTLY NOT IMPLEMENTED
    - number of times the controller enterted the Error Passive state (wrapped
@@ -144,9 +148,9 @@ Methods
 
    Clear and disables all filters
 
-.. method:: CAN.any(fifo)
+.. method:: CAN.any()
 
-   Return ``True`` if any message waiting on the FIFO, else ``False``.
+   Return ``True`` if any messages are waiting to be received, else ``False``.
 
 .. method:: CAN.recv(list=None, \*, timeout=5000)
 
@@ -209,6 +213,8 @@ Methods
   Clear all messages from receiving queue. 
 
 .. method:: CAN.get_alerts()
+
+   METHOD CURRENTLY NOT IMPLEMENTED
 
    Read the alert status word directly from hardware.
    In order to save space in the firmware, the constants for the result decoding are not included on the :mod:`machine.CAN` module. Add the ones that you need from the list below to your program.

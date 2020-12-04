@@ -269,13 +269,15 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_send_obj, 3, machine_hw_can_send);
 
-// recv(list=None, *, timeout=5000)
+// recv(0, list=None, *, timeout=5000)
 STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {
+        ARG_fifo,
         ARG_list,
         ARG_timeout
     };
     static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_fifo, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_list, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
     };
@@ -283,6 +285,12 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    // fifo not implemented, for compatibility with pyb.can
+    mp_uint_t fifo = args[ARG_fifo].u_int;
+    if (fifo > 0) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("fifo must be zero"));
+    }
 
     can_message_t rx_message;
     check_esp_err(can_receive(&rx_message, args[ARG_timeout].u_int));
@@ -321,7 +329,7 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     items[2] = 0;
     return ret_obj;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_recv_obj, 0, machine_hw_can_recv);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_recv_obj, 1, machine_hw_can_recv);
 
 // Clear filters setting
 STATIC mp_obj_t machine_hw_can_clearfilter(mp_obj_t self_in) {
@@ -424,7 +432,7 @@ STATIC void machine_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_p
     }
 }
 
-// init(tx, rx, baudrate, mode = CAN_MODE_NORMAL, tx_queue = 2, rx_queue = 5)
+// init(mode=CAN.NORMAL, extframe=False, prescaler=8, *)
 STATIC mp_obj_t machine_hw_can_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
     machine_can_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     return machine_hw_can_init_helper(self, n_args - 1, args + 1, kw_args);
@@ -441,18 +449,20 @@ STATIC mp_obj_t machine_hw_can_deinit(const mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_hw_can_deinit_obj, machine_hw_can_deinit);
 
-// CAN(bus, ...) No argument to get the object
-// If no arguments are provided, the initialized object will be returned
+// CAN(bus, ...)
+// If no additional arguments are provided, the un-initialized object will be returned
 mp_obj_t machine_hw_can_make_new(const mp_obj_type_t *type, size_t n_args,
                                  size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
+
+    // bus not implemented, for compatibility with pyb.can
     if (mp_obj_is_int(args[0]) != true) {
-        mp_raise_TypeError(MP_ERROR_TEXT("bus must be a number"));
+        mp_raise_TypeError(MP_ERROR_TEXT("bus must be an integer"));
     }
-    mp_uint_t can_idx = mp_obj_get_int(args[0]);
-    if (can_idx > 1) {
-        nlr_raise(mp_obj_new_exception_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("CAN doesn't exist-")));
+    mp_uint_t bus = mp_obj_get_int(args[0]);
+    if (bus > 0) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("bus must be zero"));
     }
     machine_can_obj_t *self = &machine_can_obj;
     if (n_args > 1 || n_kw > 0) {
@@ -473,16 +483,16 @@ mp_obj_t machine_hw_can_make_new(const mp_obj_type_t *type, size_t n_args,
     return MP_OBJ_FROM_PTR(self);
 }
 
-// init(mode, extframe=False, baudrate=500, *)
+// init(mode, extframe=False, prescaler=8, *)
 STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {
         ARG_mode,
         ARG_extframe,
-        ARG_baudrate,
         ARG_prescaler,
         ARG_sjw,
         ARG_bs1,
         ARG_bs2,
+        ARG_baudrate,
         ARG_tx_io,
         ARG_rx_io,
         ARG_tx_queue,
@@ -496,7 +506,7 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
         { MP_QSTR_sjw, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_SJW} },
         { MP_QSTR_bs1, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS1} },
         { MP_QSTR_bs2, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS2} },
-        { MP_QSTR_baudrate, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_baudrate, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 500} },
         { MP_QSTR_tx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 4} },
         { MP_QSTR_rx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 2} },
         { MP_QSTR_tx_queue, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },

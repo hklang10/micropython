@@ -17,22 +17,22 @@ Example usage (works without anything connected)::
     can = CAN(0, extframe=True, mode=CAN.LOOPBACK, baudrate=BAUDRATE_500k)
     dev.setfilter(0, CAN.FILTER_ADDRESS, [0x102, 0])  # set a filter to receive messages with id = 0x102
     can.send([1,2,3], 0x102)   # send a message with id 123
-    can.recv()                 # receive message
+    can.recv(0)                # receive message
 
 or 
     from machine import CAN
     can = CAN(0)
     can.init(CAN.NORMAL)
     can.send([1,2,3],100)
-
+    can.recv(0)
 
 Constructors
 ------------
 
 .. class:: machine.CAN(bus, ...)
 
-   Construct a CAN object on the given bus.  *bus* can be 0 or 1 (for compatibility with STM32). 
-       *bus* is not implemented for esp32, 0 or 1 will point to the same device
+   Construct a CAN object on the given bus.
+       *bus* is not implemented for ESP32, value is required and must be zero.
 
    See :meth:`CAN.init` for parameters of initialisation.
 
@@ -156,10 +156,10 @@ Methods
 
    Return ``True`` if any messages are waiting to be received, else ``False``.
 
-.. method:: CAN.recv(list=None, \*, timeout=5000)
+.. method:: CAN.recv(fifo, list=None, \*, timeout=5000)
 
    Receive data on the bus:
-
+     - *fifo* is an integer, which is the FIFO to receive on.  NOT IMPLEMENTED must be zero.
      - *list* is an optional list object to be used as the return value
      - *timeout* is the timeout in milliseconds to wait for the receive.
 

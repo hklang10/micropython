@@ -19,6 +19,12 @@ Example usage (works without anything connected)::
     can.send([1,2,3], 0x102)   # send a message with id 123
     can.recv()                 # receive message
 
+or 
+    from machine import CAN
+    can = CAN(0)
+    can.init(CAN.NORMAL)
+    can.send([1,2,3],100)
+
 
 Constructors
 ------------
@@ -37,11 +43,9 @@ Constructors
 Methods
 -------
 
-.. method:: CAN.init(mode, extframe=False, baudrate=500, prescaler, \*, sjw=1, bs1=6, bs2=8, 
-                         tx_io=4, rx_io=2, tx_queue=0, rx_queue=5, auto_restart=False)
+.. method:: CAN.init(mode, extframe=False, prescaler=8, \*, sjw=3, bs1=15, bs2=4, 
+                         baudrate=500, tx_io=4, rx_io=2, tx_queue=0, rx_queue=5, auto_restart=False)
 
-   direct calls to init() are not implemented, use machine.CAN() constructor, using the arguments below:
- 
    Initialise the CAN bus with the given parameters:
 
      - *mode* is one of:  NORMAL, LOOPBACK, SILENT, SILENT_LOOPBACK, LISTEN_ONLY
@@ -213,8 +217,6 @@ Methods
   Clear all messages from receiving queue. 
 
 .. method:: CAN.get_alerts()
-
-   METHOD CURRENTLY NOT IMPLEMENTED
 
    Read the alert status word directly from hardware.
    In order to save space in the firmware, the constants for the result decoding are not included on the :mod:`machine.CAN` module. Add the ones that you need from the list below to your program.

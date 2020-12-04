@@ -429,7 +429,7 @@ STATIC mp_obj_t machine_hw_can_init(size_t n_args, const mp_obj_t *args, mp_map_
     machine_can_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     return machine_hw_can_init_helper(self, n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_init_obj, 4, machine_hw_can_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_init_obj, 1, machine_hw_can_init);
 
 // deinit()
 STATIC mp_obj_t machine_hw_can_deinit(const mp_obj_t self_in) {
@@ -492,16 +492,16 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_mode, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = CAN_MODE_NORMAL} },
         { MP_QSTR_extframe, MP_ARG_BOOL, {.u_bool = false} },
-        { MP_QSTR_baudrate, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_prescaler, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_PRESCALER} },
+        { MP_QSTR_prescaler, MP_ARG_INT, {.u_int = CAN_DEFAULT_PRESCALER} },
         { MP_QSTR_sjw, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_SJW} },
         { MP_QSTR_bs1, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS1} },
         { MP_QSTR_bs2, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS2} },
-        { MP_QSTR_tx_io, MP_ARG_INT, {.u_int = 4} },
-        { MP_QSTR_rx_io, MP_ARG_INT, {.u_int = 2} },
-        { MP_QSTR_tx_queue, MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_rx_queue, MP_ARG_INT, {.u_int = 5} },
-        { MP_QSTR_auto_restart, MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_baudrate, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_tx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 4} },
+        { MP_QSTR_rx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 2} },
+        { MP_QSTR_tx_queue, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_rx_queue, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5} },
+        { MP_QSTR_auto_restart, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
     };
     // parse args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];

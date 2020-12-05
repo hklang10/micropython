@@ -153,12 +153,23 @@ STATIC mp_obj_t machine_hw_can_restart(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_hw_can_restart_obj, machine_hw_can_restart);
 
-// any() - return `True` if any message waiting, else `False`
-STATIC mp_obj_t machine_hw_can_any(mp_obj_t self_in) {
+// any(fifo) - return `True` if any message waiting in receive, else `False`
+STATIC mp_obj_t machine_hw_can_any(mp_obj_t self_in, mp_obj_t fifo_in) {
+    // fifo not implemented, for compatibility with pyb.can
+    if (mp_obj_is_int(fifo_in) != true) {
+        mp_raise_TypeError(MP_ERROR_TEXT("fifo must be an integer"));
+    }
+    mp_int_t fifo = mp_obj_get_int(fifo_in);
+    if (mp_obj_get_int(fifo_in) > 0) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("fifo must be zero"));
+    }
     can_status_info_t status = _machine_hw_can_get_status();
-    return mp_obj_new_bool((status.msgs_to_rx) > 0);
+    if (status.msgs_to_rx > 0) {
+        return mp_const_true;
+    }
+    return mp_const_false;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_hw_can_any_obj, machine_hw_can_any);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_hw_can_any_obj, machine_hw_can_any);
 
 // Get the state of the controller
 STATIC mp_obj_t machine_hw_can_state(mp_obj_t self_in) {

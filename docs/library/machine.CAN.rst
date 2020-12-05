@@ -152,9 +152,11 @@ Methods
 
    Clear and disables all filters
 
-.. method:: CAN.any()
+.. method:: CAN.any(fifo)
 
    Return ``True`` if any messages are waiting to be received, else ``False``.
+
+     - *fifo* is an integer, which is the FIFO to receive on.  NOT IMPLEMENTED must be zero.
 
 .. method:: CAN.recv(fifo, list=None, \*, timeout=5000)
 

@@ -244,11 +244,11 @@ Methods
 Constants
 ---------
 
-.. data:: CAN.NORMAL
-          CAN.LOOPBACK
-          CAN.SILENT
-          CAN.SILENT_LOOPBACK
-          CAN.LISTEN_ONLY
+.. data:: CAN.NORMAL			Device receives and transmits. Will expect acknowledgements. Standard operating mode
+          CAN.LOOPBACK                  As CAN.NORMAL, additionally transmissions will also be duplicated into the local receive queue
+          CAN.SILENT                    Device will transmit, but will not expect acknowledgements from the network
+          CAN.SILENT_LOOPBACK           As CAN.SILENT, additionally transmissions will also be duplicated into the receive queue
+          CAN.LISTEN_ONLY               Device will recieve only.  Device will not send acknowledgements
 
    The mode of the CAN bus used in :meth:`~CAN.init()`.
 

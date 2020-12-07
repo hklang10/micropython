@@ -40,13 +40,13 @@
 
 #define DEVICE_NAME "CAN"
 
-#define CAN_BAUDRATE_25k 25
-#define CAN_BAUDRATE_50k 50
-#define CAN_BAUDRATE_100k 100
-#define CAN_BAUDRATE_125k 125
-#define CAN_BAUDRATE_250k 250
-#define CAN_BAUDRATE_500k 500
-#define CAN_BAUDRATE_800k 800
+#define CAN_BAUDRATE_25K 25
+#define CAN_BAUDRATE_50K 50
+#define CAN_BAUDRATE_100K 100
+#define CAN_BAUDRATE_125K 125
+#define CAN_BAUDRATE_250K 250
+#define CAN_BAUDRATE_500K 500
+#define CAN_BAUDRATE_800K 800
 #define CAN_BAUDRATE_1M 1000
 
 typedef enum _filter_mode_t {
@@ -83,10 +83,10 @@ typedef enum _rx_state_t {
 } rx_state_t;
 
 // Default baudrate: 500kb
-#define CAN_DEFAULT_PRESCALER (8)
-#define CAN_DEFAULT_SJW (3)
-#define CAN_DEFAULT_BS1 (15)
-#define CAN_DEFAULT_BS2 (4)
+#define CAN_DEFAULT_PRESCALER  (8)
+#define CAN_DEFAULT_SJW        (3)
+#define CAN_DEFAULT_BS1       (15)
+#define CAN_DEFAULT_BS2        (4)
 
 // Internal Functions
 mp_obj_t machine_hw_can_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args);
@@ -110,7 +110,7 @@ STATIC can_status_info_t _machine_hw_can_get_status() {
 
 STATIC void _machine_hw_can_set_filter(machine_can_obj_t *self, uint32_t addr, uint32_t mask, uint8_t bank, bool rtr) {
     //Check if bank is allowed
-    if ( bank < 0 && bank > ((self->extframe && self->config->filter.single_filter) ? 0 : 1 )) {
+    if (bank < 0 && bank > ((self->extframe && self->config->filter.single_filter) ? 0 : 1)) {
         mp_raise_ValueError(MP_ERROR_TEXT("CAN filter parameter error"));
     }
     uint32_t preserve_mask;
@@ -119,15 +119,15 @@ STATIC void _machine_hw_can_set_filter(machine_can_obj_t *self, uint32_t addr, u
         mask = (mask & 0x1FFFFFFF) << 3 | 0x03;
         preserve_mask = 0;
     } else if (self->config->filter.single_filter) {
-        addr = ( ( (addr & 0x7FF) << 5 ) | (rtr ? 0x10 : 0) );
-        mask = ( (mask & 0x7FF) << 5 );
+        addr = (((addr & 0x7FF) << 5) | (rtr ? 0x10 : 0));
+        mask = ((mask & 0x7FF) << 5);
         mask |= 0xFFFFF000;
         preserve_mask = 0;
     } else {
-        addr = ( ( (addr & 0x7FF) << 5 ) | (rtr ? 0x10 : 0) );
-        mask = ( (mask & 0x7FF) << 5 );
-        preserve_mask = 0xFFFF << ( bank == 0 ? 16 : 0 );
-        if ( (self->config->filter.acceptance_mask & preserve_mask) == ( 0xFFFF << (bank == 0 ? 16 : 0) ) ) {
+        addr = (((addr & 0x7FF) << 5) | (rtr ? 0x10 : 0));
+        mask = ((mask & 0x7FF) << 5);
+        preserve_mask = 0xFFFF << (bank == 0 ? 16 : 0);
+        if ((self->config->filter.acceptance_mask & preserve_mask) == (0xFFFF << (bank == 0 ? 16 : 0))) {
             // Other filter accepts all; it will replaced duplicating current filter
             addr = addr | (addr << 16);
             mask = mask | (mask << 16);
@@ -238,10 +238,10 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
         ARG_self
     };
     static const mp_arg_t allowed_args[] = {
-        {MP_QSTR_data, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
-        {MP_QSTR_id, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0}},
-        {MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0}},
-        {MP_QSTR_rtr, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false}},
+        {MP_QSTR_data,    MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_id,      MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0}},
+        {MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 0}},
+        {MP_QSTR_rtr,     MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false}},
     };
 
     // parse args
@@ -276,7 +276,6 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
     }
     check_esp_err(can_transmit(&tx_msg, args[ARG_timeout].u_int));
     return mp_const_none;
-
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_hw_can_send_obj, 3, machine_hw_can_send);
 
@@ -288,9 +287,9 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
         ARG_timeout
     };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_fifo, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_list, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
-        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5000} },
+        { MP_QSTR_fifo,    MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_list,    MP_ARG_OBJ,                   {.u_rom_obj = MP_ROM_NONE} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 5000} },
     };
 
     // parse args
@@ -311,7 +310,7 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     mp_obj_t *items;
     if (ret_obj == mp_const_none) {
         ret_obj = mp_obj_new_tuple(4, NULL);
-        items = ( (mp_obj_tuple_t *)MP_OBJ_TO_PTR(ret_obj) )->items;
+        items = ((mp_obj_tuple_t *)MP_OBJ_TO_PTR(ret_obj))->items;
         items[3] = mp_obj_new_bytes(rx_message.data, rx_message.data_length_code);
     } else {
         // User should provide a list of length at least 4 to hold the values
@@ -329,7 +328,8 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
             mp_raise_TypeError(MP_ERROR_TEXT("item[3] must be datatype memoryview"));
         }
         mp_obj_array_t *mv = MP_OBJ_TO_PTR(items[3]);
-        if (!(mv->typecode == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | BYTEARRAY_TYPECODE) || (mv->typecode | 0x20) == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | 'b'))) {
+        if (!(mv->typecode == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | BYTEARRAY_TYPECODE)
+               || (mv->typecode | 0x20) == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | 'b'))) {
             mp_raise_ValueError(MP_ERROR_TEXT("memoryview must be a bytearray"));
         }
         mv->len = rx_message.data_length_code;
@@ -373,10 +373,10 @@ STATIC mp_obj_t machine_hw_can_setfilter(size_t n_args, const mp_obj_t *pos_args
         ARG_rtr
     };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_bank, MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_mode, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_bank,   MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_mode,   MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_params, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_rtr, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_bool = false} },
+        { MP_QSTR_rtr,    MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_bool = false} },
     };
 
     // parse args
@@ -510,17 +510,17 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
         ARG_auto_restart
     };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_mode, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = CAN_MODE_NORMAL} },
-        { MP_QSTR_extframe, MP_ARG_BOOL, {.u_bool = false} },
-        { MP_QSTR_prescaler, MP_ARG_INT, {.u_int = CAN_DEFAULT_PRESCALER} },
-        { MP_QSTR_sjw, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_SJW} },
-        { MP_QSTR_bs1, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS1} },
-        { MP_QSTR_bs2, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = CAN_DEFAULT_BS2} },
-        { MP_QSTR_baudrate, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 500} },
-        { MP_QSTR_tx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 4} },
-        { MP_QSTR_rx_io, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 2} },
-        { MP_QSTR_tx_queue, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
-        { MP_QSTR_rx_queue, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 5} },
+        { MP_QSTR_mode,         MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = CAN_MODE_NORMAL} },
+        { MP_QSTR_extframe,     MP_ARG_BOOL,                  {.u_bool = false} },
+        { MP_QSTR_prescaler,    MP_ARG_INT,                   {.u_int = CAN_DEFAULT_PRESCALER} },
+        { MP_QSTR_sjw,          MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = CAN_DEFAULT_SJW} },
+        { MP_QSTR_bs1,          MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = CAN_DEFAULT_BS1} },
+        { MP_QSTR_bs2,          MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = CAN_DEFAULT_BS2} },
+        { MP_QSTR_baudrate,     MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 500} },
+        { MP_QSTR_tx_io,        MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 4} },
+        { MP_QSTR_rx_io,        MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 2} },
+        { MP_QSTR_tx_queue,     MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 0} },
+        { MP_QSTR_rx_queue,     MP_ARG_KW_ONLY | MP_ARG_INT,  {.u_int = 5} },
         { MP_QSTR_auto_restart, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
     };
     // parse args
@@ -534,8 +534,10 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
     self->config->general.bus_off_io = CAN_IO_UNUSED;
     self->config->general.tx_queue_len = args[ARG_tx_queue].u_int;
     self->config->general.rx_queue_len = args[ARG_rx_queue].u_int;
-    self->config->general.alerts_enabled = CAN_ALERT_AND_LOG || CAN_ALERT_BELOW_ERR_WARN || CAN_ALERT_ERR_ACTIVE || CAN_ALERT_BUS_RECOVERED ||
-                                           CAN_ALERT_ABOVE_ERR_WARN || CAN_ALERT_BUS_ERROR || CAN_ALERT_ERR_PASS || CAN_ALERT_BUS_OFF;
+    self->config->general.alerts_enabled = CAN_ALERT_AND_LOG || CAN_ALERT_BELOW_ERR_WARN ||
+                                           CAN_ALERT_ERR_ACTIVE || CAN_ALERT_BUS_RECOVERED ||
+                                           CAN_ALERT_ABOVE_ERR_WARN || CAN_ALERT_BUS_ERROR ||
+                                           CAN_ALERT_ERR_PASS || CAN_ALERT_BUS_OFF;
     self->config->general.clkout_divider = 0;
     self->loopback = ((args[ARG_mode].u_int & 0x10) > 0);
     self->extframe = args[ARG_extframe].u_bool;
@@ -557,29 +559,29 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
             .triple_sampling = false
         });
         break;
-    case CAN_BAUDRATE_25k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_25KBITS() );
+    case CAN_BAUDRATE_25K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_25KBITS());
         break;
-    case CAN_BAUDRATE_50k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_50KBITS() );
+    case CAN_BAUDRATE_50K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_50KBITS());
         break;
-    case CAN_BAUDRATE_100k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_100KBITS() );
+    case CAN_BAUDRATE_100K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_100KBITS());
         break;
-    case CAN_BAUDRATE_125k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_125KBITS() );
+    case CAN_BAUDRATE_125K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_125KBITS());
         break;
-    case CAN_BAUDRATE_250k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_250KBITS() );
+    case CAN_BAUDRATE_250K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_250KBITS());
         break;
-    case CAN_BAUDRATE_500k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_500KBITS() );
+    case CAN_BAUDRATE_500K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_500KBITS());
         break;
-    case CAN_BAUDRATE_800k:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_800KBITS() );
+    case CAN_BAUDRATE_800K:
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_800KBITS());
         break;
     case CAN_BAUDRATE_1M:
-        timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_1MBITS() );
+        timing = &((can_timing_config_t) CAN_TIMING_CONFIG_1MBITS());
         break;
     default:
         mp_raise_NotImplementedError(MP_ERROR_TEXT("invalid baudrate"));

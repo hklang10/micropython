@@ -28,7 +28,6 @@
 #include "py/runtime.h"
 #include "py/builtin.h"
 #include "py/mphal.h"
-#include "py/mperrno.h"
 #include "mpconfigport.h"
 #include "mphalport.h"
 
@@ -160,7 +159,7 @@ STATIC mp_obj_t machine_hw_can_any(mp_obj_t self_in, mp_obj_t fifo_in) {
         mp_raise_TypeError(MP_ERROR_TEXT("fifo must be an integer"));
     }
     mp_int_t fifo = mp_obj_get_int(fifo_in);
-    if (mp_obj_get_int(fifo_in) > 0) {
+    if (fifo > 0) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("fifo must be zero"));
     }
     can_status_info_t status = _machine_hw_can_get_status();
@@ -186,11 +185,11 @@ STATIC mp_obj_t machine_hw_can_info(size_t n_args, const mp_obj_t *args) {
         list = MP_OBJ_TO_PTR(mp_obj_new_list(8, NULL));
     } else {
         if (!mp_obj_is_type(args[1], &mp_type_list)) {
-            mp_raise_TypeError(NULL);
+            mp_raise_TypeError(MP_ERROR_TEXT("must be a datatype list"));
         }
         list = MP_OBJ_TO_PTR(args[1]);
         if (list->len < 8) {
-            mp_raise_ValueError(NULL);
+            mp_raise_ValueError(MP_ERROR_TEXT("list must be minimum length 8"));
         }
     }
     can_status_info_t status = _machine_hw_can_get_status();
@@ -207,6 +206,7 @@ STATIC mp_obj_t machine_hw_can_info(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_hw_can_info_obj, 1, 2, machine_hw_can_info);
 
 // Get Alert info
+// fixme allow field to be passed in, implement timeout
 STATIC mp_obj_t machine_hw_can_alert(mp_obj_t self_in) {
     uint32_t alerts;
     check_esp_err(can_read_alerts(&alerts, 0));
@@ -253,16 +253,16 @@ STATIC mp_obj_t machine_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_
     size_t length;
     mp_obj_t *items;
     mp_obj_get_array(args[ARG_data].u_obj, &length, &items);
-    if (length > 8) {
+    if (length > CAN_MAX_DATA_LEN) {
         mp_raise_ValueError(MP_ERROR_TEXT("CAN data field too long"));
     }
     uint8_t flags = (args[ARG_rtr].u_bool ? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE);
     uint32_t id = args[ARG_id].u_int;
     if (self->extframe) {
         flags += CAN_MSG_FLAG_EXTD;
-        id &= 0x1FFFFFFF;
+        id &= CAN_EXTD_ID_MASK;
     } else {
-        id &= 0x7FF;
+        id &= CAN_STD_ID_MASK;
     }
     if (self->loopback) {
         flags += CAN_MSG_FLAG_SELF;
@@ -316,21 +316,21 @@ STATIC mp_obj_t machine_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_
     } else {
         // User should provide a list of length at least 4 to hold the values
         if (!mp_obj_is_type(ret_obj, &mp_type_list)) {
-            mp_raise_TypeError(MP_ERROR_TEXT("Type must be a List"));
+            mp_raise_TypeError(MP_ERROR_TEXT("must be a datatype list"));
         }
         mp_obj_list_t *list = MP_OBJ_TO_PTR(ret_obj);
         if (list->len < 4) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Minimum length of bytearray is 4"));
+            mp_raise_ValueError(MP_ERROR_TEXT("list must be minimum length 4"));
         }
         items = list->items;
         // Fourth element must be a memoryview which we assume points to a
         // byte-like array which is large enough, and then we resize it inplace
         if (!mp_obj_is_type(items[3], &mp_type_memoryview)) {
-            mp_raise_TypeError(NULL);
+            mp_raise_TypeError(MP_ERROR_TEXT("item[3] must be datatype memoryview"));
         }
         mp_obj_array_t *mv = MP_OBJ_TO_PTR(items[3]);
         if (!(mv->typecode == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | BYTEARRAY_TYPECODE) || (mv->typecode | 0x20) == (MP_OBJ_ARRAY_TYPECODE_FLAG_RW | 'b'))) {
-            mp_raise_ValueError(NULL);
+            mp_raise_ValueError(MP_ERROR_TEXT("memoryview must be a bytearray"));
         }
         mv->len = rx_message.data_length_code;
         memcpy(mv->items, rx_message.data, rx_message.data_length_code);
@@ -439,7 +439,7 @@ STATIC void machine_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_p
                   self->loopback,
                   self->extframe);
     } else {
-        mp_printf(print, "CAN Device is not initialized");
+        mp_printf(print, "CAN device is not initialized");
     }
 }
 
@@ -480,7 +480,6 @@ mp_obj_t machine_hw_can_make_new(const mp_obj_type_t *type, size_t n_args,
         if (self->config->initialized) {
             // The caller is requesting a reconfiguration of the hardware
             // this can only be done if the hardware is in init mode
-            printf("Device is going to be reconfigured\n");
             machine_hw_can_deinit(&self);
         }
         self->rxcallback = mp_const_none;
@@ -541,7 +540,7 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
     self->loopback = ((args[ARG_mode].u_int & 0x10) > 0);
     self->extframe = args[ARG_extframe].u_bool;
     if (args[ARG_auto_restart].u_bool) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Auto-restart not supported"));
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("auto_restart not supported"));
     }
     can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
     self->config->filter.single_filter = self->extframe;
@@ -583,10 +582,7 @@ STATIC mp_obj_t machine_hw_can_init_helper(machine_can_obj_t *self, size_t n_arg
         timing = &( (can_timing_config_t) CAN_TIMING_CONFIG_1MBITS() );
         break;
     default:
-        //fixme
-        mp_raise_ValueError(MP_ERROR_TEXT("Invalid baudrate"));
-        self->config->baudrate = 0;
-        return mp_const_none;
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("invalid baudrate"));
     }
     self->config->timing = *timing;
     self->config->baudrate = args[ARG_baudrate].u_int;

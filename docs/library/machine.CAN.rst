@@ -17,30 +17,38 @@ Example usage (works without anything connected)::
     can = CAN(0, extframe=True, mode=CAN.LOOPBACK, baudrate=BAUDRATE_500k)
     dev.setfilter(0, CAN.FILTER_ADDRESS, [0x102, 0])  # set a filter to receive messages with id = 0x102
     can.send([1,2,3], 0x102)   # send a message with id 123
-    can.recv()                 # receive message
+    can.recv(0)                # receive message
 
+or 
+    from machine import CAN
+    can = CAN(0)
+    can.init(CAN.NORMAL)
+    can.send([1,2,3],100)
+    can.recv(0)
 
 Constructors
 ------------
 
 .. class:: machine.CAN(bus, ...)
 
-   Construct a CAN object on the given bus.  *bus* can be 0 or 1 (for compatibility with STM32). It will point at the same device
-   With no additional parameters, the CAN object is created but not
-   initialised (it has the settings from the last initialisation of
-   the bus, if any).  If extra arguments are given, the bus is initialised.
+   Construct a CAN object on the given bus.
+       *bus* is not implemented for ESP32, value is required and must be zero.
+
    See :meth:`CAN.init` for parameters of initialisation.
 
-   The physical pins of the CAN bus can be assigned during init.
+   Calling the CAN constructor for an existing device will deinitialize, empty any queues, 
+      reconfigure and then start the device
+
 
 Methods
 -------
 
-.. method:: CAN.init(mode, extframe=False, baudrate, prescaler, \*, sjw=1, bs1=6, bs2=8, auto_restart=False)
+.. method:: CAN.init(mode, extframe=False, prescaler=8, \*, sjw=3, bs1=15, bs2=4, 
+                         baudrate=500, tx_io=4, rx_io=2, tx_queue=0, rx_queue=5, auto_restart=False)
 
    Initialise the CAN bus with the given parameters:
 
-     - *mode* is one of:  NORMAL, LOOPBACK, SILENT, SILENT_LOOPBACK
+     - *mode* is one of:  NORMAL, LOOPBACK, SILENT, SILENT_LOOPBACK, LISTEN_ONLY
      - if *extframe* is True then the bus uses extended identifiers in the frames
        (29 bits); otherwise it uses standard 11 bit identifiers
      - *baudrate* is used to define a standard speed. If it is defined, the *prescaler*, *sjw*, *bs1*, *bs2*
@@ -100,8 +108,8 @@ Methods
 
    The values in the list are:
 
-   - TEC value
-   - REC value
+   - Transmit Error Count (TEC) value
+   - Receive Error Count (REC) value
    - number of times the controller enterted the Error Warning state (wrapped
      around to 0 after 65535) - CURRENTLY NOT IMPLEMENTED
    - number of times the controller enterted the Error Passive state (wrapped
@@ -146,12 +154,14 @@ Methods
 
 .. method:: CAN.any(fifo)
 
-   Return ``True`` if any message waiting on the FIFO, else ``False``.
+   Return ``True`` if any messages are waiting to be received, else ``False``.
 
-.. method:: CAN.recv(list=None, \*, timeout=5000)
+     - *fifo* is an integer, which is the FIFO to receive on.  NOT IMPLEMENTED must be zero.
+
+.. method:: CAN.recv(fifo, list=None, \*, timeout=5000)
 
    Receive data on the bus:
-
+     - *fifo* is an integer, which is the FIFO to receive on.  NOT IMPLEMENTED must be zero.
      - *list* is an optional list object to be used as the return value
      - *timeout* is the timeout in milliseconds to wait for the receive.
 
@@ -234,11 +244,11 @@ Methods
 Constants
 ---------
 
-.. data:: CAN.NORMAL
-          CAN.LOOPBACK
-          CAN.SILENT
-          CAN.SILENT_LOOPBACK
-          CAN.LISTEN_ONLY
+.. data:: CAN.NORMAL			Device receives and transmits. Will expect acknowledgements. Standard operating mode
+          CAN.LOOPBACK                  As CAN.NORMAL, additionally transmissions will also be duplicated into the local receive queue
+          CAN.SILENT                    Device will transmit, but will not expect acknowledgements from the network
+          CAN.SILENT_LOOPBACK           As CAN.SILENT, additionally transmissions will also be duplicated into the receive queue
+          CAN.LISTEN_ONLY               Device will recieve only.  Device will not send acknowledgements
 
    The mode of the CAN bus used in :meth:`~CAN.init()`.
 
